@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cleaning Schedule</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f6f3;
+      --surface: #ffffff;
+      --border: #e4e2dc;
+      --text: #1a1917;
+      --muted: #767570;
+      --green: #1D9E75;
+      --green-light: #e1f5ee;
+      --green-dark: #085041;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 4rem;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 2rem;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 6px;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .week-info {
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* This week cards */
+    .this-week-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 480px) {
+      .cards { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem;
+    }
+
+    .task-chip {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .card-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* Off this week */
+    .off-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 0.75rem;
+    }
+
+    .off-label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .off-pill {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+
+    /* Schedule table */
+    .schedule-title {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      table-layout: fixed;
+    }
+
+    th {
+      text-align: left;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    tr.current td {
+      background: var(--green-light);
+      color: var(--green-dark);
+      font-weight: 500;
+    }
+
+    tr.current td:first-child {
+      border-left: 3px solid var(--green);
+    }
+
+    footer {
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="eyebrow">Flat C320 · Lausanne</div>
+      <h1>Cleaning schedule</h1>
+      <div class="week-info" id="week-info"></div>
+    </header>
+
+    <div class="this-week-label">Assigned this week</div>
+    <div class="cards" id="cards"></div>
+    <div class="off-section" id="off-section"></div>
+
+    <hr class="divider" />
+
+    <div class="schedule-title">Full 6-week rotation</div>
+    <table id="sched-table"></table>
+
+    <footer>Rotates automatically every week &mdash; no action needed</footer>
+  </div>
+
+  <script>
+    const NAMES = ['Iyazid','Martina','Ayanna','Marcel','Juan','Marie-Caroline'];
+    const TASKS = ['Trash','Vacuum','Mop'];
+
+    const AVATAR_COLORS = [
+      {bg:'#EEEDFE',txt:'#3C3489'},
+      {bg:'#FAECE7',txt:'#712B13'},
+      {bg:'#E1F5EE',txt:'#085041'},
+      {bg:'#E6F1FB',txt:'#0C447C'},
+      {bg:'#FAEEDA',txt:'#633806'},
+      {bg:'#FBEAF0',txt:'#72243E'},
+    ];
+
+    const TASK_CHIP = [
+      {bg:'#FAECE7',txt:'#993C1D'},
+      {bg:'#E1F5EE',txt:'#0F6E56'},
+      {bg:'#E6F1FB',txt:'#185FA5'},
+    ];
+
+    function getWeekNumber(d) {
+      const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7));
+      const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+      return Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
+    }
+
+    function getMonday(d) {
+      const date = new Date(d);
+      const day = date.getDay() || 7;
+      if (day !== 1) date.setHours(-24 * (day - 1));
+      return date;
+    }
+
+    function fmt(d) {
+      return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    }
+
+    function initials(name) {
+      return name.split('-').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    function getAssignment(offset) {
+      const workers = TASKS.map((task, t) => ({
+        name: NAMES[(offset + t) % 6],
+        task,
+        nameIdx: (offset + t) % 6,
+        taskIdx: t,
+      }));
+      const workerIdxSet = new Set(workers.map(w => w.nameIdx));
+      const off = NAMES.filter((_, i) => !workerIdxSet.has(i));
+      return { workers, off };
+    }
+
+    const today = new Date();
+    const weekNum = getWeekNumber(today);
+    const cyclePos = (weekNum - 1) % 6;
+
+    const monday = getMonday(today);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    document.getElementById('week-info').textContent =
+      'Week ' + weekNum + '  ·  ' + fmt(monday) + ' – ' + fmt(sunday);
+
+    // Cards
+    const { workers, off } = getAssignment(cyclePos);
+    const cardsEl = document.getElementById('cards');
+    workers.forEach(w => {
+      const ac = AVATAR_COLORS[w.nameIdx];
+      const tc = TASK_CHIP[w.taskIdx];
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="task-chip" style="background:${tc.bg};color:${tc.txt};">${w.task}</div>
+        <div class="avatar" style="background:${ac.bg};color:${ac.txt};">${initials(w.name)}</div>
+        <div class="card-name">${w.name}</div>`;
+      cardsEl.appendChild(card);
+    });
+
+    // Off pills
+    const offEl = document.getElementById('off-section');
+    offEl.innerHTML = '<span class="off-label">Off this week:</span>';
+    off.forEach(n => {
+      const pill = document.createElement('span');
+      pill.className = 'off-pill';
+      pill.textContent = n;
+      offEl.appendChild(pill);
+    });
+
+    // Table
+    const table = document.getElementById('sched-table');
+    const head = document.createElement('tr');
+    head.innerHTML = '<th>Week</th><th>Trash</th><th>Vacuum</th><th>Mop</th><th>Off</th>';
+    table.appendChild(head);
+    for (let i = 0; i < 6; i++) {
+      const { workers: ws, off: o } = getAssignment(i);
+      const tr = document.createElement('tr');
+      if (i === cyclePos) tr.className = 'current';
+      tr.innerHTML = `
+        <td>Week ${i + 1}${i === cyclePos ? ' ◀' : ''}</td>
+        <td>${ws[0].name}</td>
+        <td>${ws[1].name}</td>
+        <td>${ws[2].name}</td>
+        <td style="color:#767570">${o.join(', ')}</td>`;
+      table.appendChild(tr);
+    }
+  </script>
+</body>
+</html>
